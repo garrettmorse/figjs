@@ -1,6 +1,6 @@
 {
   "name": "@garrettmorse/figjs",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "files": ["index.js", "fonts", "README.md", "LICENSE"],
   "description": "A FIGlet driver for NodeJS.",
   "main": "index.js",

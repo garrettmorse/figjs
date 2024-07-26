@@ -202,6 +202,7 @@ function strToFont(str, _fontConfig) {
     for (let j = 0; j < str.length; j++) {
       if (j > 0) {
         let smushAmount = smushConfig[j];
+
         let prevSmushAmount;
         while (smushAmount > 0) {
           if (prevSmushAmount === smushAmount) {
@@ -233,7 +234,9 @@ function strToFont(str, _fontConfig) {
         switch (cmpFIG(prev, cur)) {
           // equal character
           case 1: {
-            chars[j][i] = chars[j][i].slice(1);
+            if (!chars[j-1][i].includes('$') && !chars[j][i].includes('$'))  {
+              chars[j][i] = chars[j][i].slice(1);
+            }
             break;
           }
 
@@ -332,8 +335,8 @@ function strToFont(str, _fontConfig) {
 
     result += "\n";
   }
-
-  return result.replaceAll(fontConfig.blankChar, " ");
+  return result;
+  // return result.replaceAll(fontConfig.blankChar, " ");
 }
 
 // todo: support more fonts
