@@ -291,10 +291,10 @@ function strToFont(str, _fontConfig) {
 
           // double hardblank
           case 6: {
-            if (prev === "$" && cur === "$") {
+            if (prev === fontConfig.blankChar && cur === fontConfig.blankChar) {
               result = result.slice(0, -1);
               chars[j][i] = chars[j][i].slice(1);
-              result += "$";
+              result += fontConfig.blankChar;
             }
 
             break;
@@ -310,11 +310,11 @@ function strToFont(str, _fontConfig) {
           case 8: {
             // take the character
             if (prev === " ") {
-              if (!chars[j - 1][i].includes("$")) {
+              if (!chars[j - 1][i].includes(fontConfig.blankChar)) {
                 result = result.slice(0, -1);
               }
             } else {
-              if (!chars[j][i].includes("$")) {
+              if (!chars[j][i].includes(fontConfig.blankChar)) {
                 chars[j][i] = chars[j][i].slice(1);
               }
             }
@@ -335,8 +335,8 @@ function strToFont(str, _fontConfig) {
 
     result += "\n";
   }
-  return result;
-  // return result.replaceAll(fontConfig.blankChar, " ");
+  // return result;
+  return result.replaceAll(fontConfig.blankChar, " ");
 }
 
 // todo: support more fonts
