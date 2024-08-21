@@ -1,10 +1,28 @@
 {
   "name": "@garrettmorse/figjs",
-  "version": "0.0.3",
-  "files": ["index.js", "fonts", "README.md", "LICENSE"],
+  "version": "0.1.0",
+  "files": [
+    "index.js",
+    "fonts.json",
+    "README.md",
+    "LICENSE"
+  ],
   "description": "A FIGlet driver for NodeJS.",
   "main": "index.js",
-  "keywords": ["FIGlet", "ASCII", "art", "banner", "font"],
+  "keywords": [
+    "FIGlet",
+    "ASCII",
+    "art",
+    "banner",
+    "font"
+  ],
   "author": "https://github.com/garrettmorse",
+  "repository": {
+    "url": "https://github.com/garrettmorse/figjs"
+  },
+  "scripts": {
+    "prepublishOnly": "node ./scripts/build.js",
+    "test": "node ./scripts/testy.js"
+  },
   "license": "MIT"
 }
