@@ -1,12 +1,15 @@
 {
   "name": "@garrettmorse/figjs",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "files": [
     "index.js",
-    "fonts.json",
+    "fonts.js",
+    "index.d.ts",
+    "fonts.d.ts",
     "README.md",
     "LICENSE"
   ],
+  "type": "module",
   "description": "A FIGlet driver for NodeJS.",
   "main": "index.js",
   "keywords": [
@@ -18,11 +21,14 @@
   ],
   "author": "https://github.com/garrettmorse",
   "repository": {
-    "url": "https://github.com/garrettmorse/figjs"
+    "url": "git+https://github.com/garrettmorse/figjs.git"
   },
   "scripts": {
     "prepublishOnly": "node ./scripts/build.js",
     "test": "node ./scripts/testy.js"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.6.2"
+  }
 }
