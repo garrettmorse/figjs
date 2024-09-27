@@ -1,11 +1,12 @@
-/**
- * @typedef Font
- * @type {import('./fonts').Font}
- */
-
-/**
- * @module FIGlet
- */
+export type Font = {
+  blankChar: string;
+  charConfig: Record<string, string[]>;
+  charHeight: number;
+  baseline: number;
+  maxLength: number;
+  smushRules: Record<string, boolean>;
+  fontLines: string[];
+};
 
 /** Represents a FIGlet font generator, given some configuration. */
 export class FIGlet {
@@ -24,12 +25,8 @@ export class FIGlet {
     ">",
   ];
   /** @private @type {Font} */
-  #font;
-  /**
-   *
-   * @param {Font} font
-   */
-  constructor(font) {
+  #font : Font;
+  constructor(font: Font) {
     this.#font = font;
   }
 
@@ -39,7 +36,7 @@ export class FIGlet {
    * @param {string} a
    * @param {string} b
    */
-  cmpFIG(a, b) {
+  cmpFIG(a: string, b: string) {
     // Rule 1: equal character
     if (this.#font.smushRules[1] && a === b) {
       return 1;
@@ -111,7 +108,7 @@ export class FIGlet {
    * @param {string} str1
    * @param {string} str2
    */
-  static getSpaces(str1, str2) {
+  static getSpaces(str1: string, str2: string) {
     let str1Spaces = 0;
     let str2Spaces = 0;
 
@@ -138,13 +135,13 @@ export class FIGlet {
    * @private
    * @param {number} char
    */
-  parseChar(char) {
+  parseChar(char: number) {
     if (char in this.#font.charConfig) {
       return this.#font.charConfig[char];
     }
 
     const charStart = (char - 32) * this.#font.charHeight;
-    const charDefinition = [];
+    const charDefinition: string[] = [];
 
     for (let i = 0; i < this.#font.charHeight; i++) {
       charDefinition[i] = this.#font.fontLines[charStart + i].replaceAll(
@@ -166,7 +163,7 @@ export class FIGlet {
    * @param {string} str
    * @returns {string}
    */
-  write(str) {
+  write(str: string) {
     const chars = [];
     let result = "";
 

@@ -1,17 +1,36 @@
 {
   "name": "@garrettmorse/figjs",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "files": [
-    "index.js",
-    "fonts.js",
-    "index.d.ts",
-    "fonts.d.ts",
+    "dist",
     "README.md",
     "LICENSE"
   ],
   "type": "module",
   "description": "A FIGlet driver for NodeJS.",
-  "main": "index.js",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.cts",
+        "default": "./dist/cjs/index.cjs" 
+      }
+    },
+    "./fonts/*": {
+      "import": {
+        "types": "./dist/fonts/*.d.ts",
+        "default": "./dist/fonts/*.js"
+      },
+      "require": {
+        "types": "./dist/cjs/fonts/*.d.cts",
+        "default": "./dist/cjs/fonts/*.cjs"
+      }
+    }
+  },
   "keywords": [
     "FIGlet",
     "ASCII",
@@ -24,11 +43,13 @@
     "url": "git+https://github.com/garrettmorse/figjs.git"
   },
   "scripts": {
-    "prepublishOnly": "node ./scripts/build.js",
-    "test": "node ./scripts/testy.js"
+    "build": "node ./scripts/build.js && duel",
+    "prepublishOnly": "npm run build",
+    "test": "node ./scripts/testy.js && node ./scripts/testy.cjs"
   },
   "license": "MIT",
   "devDependencies": {
+    "@knighted/duel": "^1.0.8",
     "typescript": "^5.6.2"
   }
 }

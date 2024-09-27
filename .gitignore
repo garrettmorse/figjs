@@ -1,3 +1,5 @@
+fonts/*.js
+
 # Logs
 logs
 *.log

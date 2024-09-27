@@ -74,19 +74,21 @@ function parseFont(font) {
 }
 
 const fontNames = [];
-console.time('✅ wrote fonts.js');
-let buf = '/**\n * @typedef Font\n * @type {__FONT_NAMES__}\n */\n\n';
-fonts.forEach((font) => {
+const filePromises = [];
+console.time('✅ wrote fonts');
+fonts.filter(filename => filename.slice(-4) === '.flf').forEach((font) => {
   const fontStr = fs.readFileSync(`./fonts/${font}`, { encoding: "utf8" });
   const fontName = font.slice(0, -4);
   fontNames.push(fontName);
-  buf += `const ${fontName} = ${JSON.stringify(parseFont(fontStr), null, 2)};\n\n`;
+
+  let buf = 'import type { Font } from "../index.js";\n\n'
+  buf += `const ${fontName}: Font = ${JSON.stringify(parseFont(fontStr), null, 2)};\n\n`;
+  buf += `export {\n  ${fontName}\n};`;
+
+  filePromises.push(fs.promises.writeFile(process.cwd() + `/fonts/${fontName}.ts`, buf));
 });
 
-buf += `export {\n  ${fontNames.join(',\n  ')}\n};`;
+await Promise.all(filePromises).then(() =>
+  console.timeEnd('✅ wrote fonts')
+);
 
-buf = buf.replace('__FONT_NAMES__', `typeof ${fontNames.join(' & ')}`);
-
-fs.writeFileSync(process.cwd() + "/fonts.js", buf);
-
-console.timeEnd('✅ wrote fonts.js');
