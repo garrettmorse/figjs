@@ -1,4 +1,4 @@
-const fs = require("node:fs");
+import fs  from "node:fs";
 
 const fonts = fs.readdirSync("./fonts");
 
@@ -73,12 +73,20 @@ function parseFont(font) {
   };
 }
 
-const fontObj = {};
+const fontNames = [];
+console.time('✅ wrote fonts.js');
+let buf = '/**\n * @typedef Font\n * @type {__FONT_NAMES__}\n */\n\n';
 fonts.forEach((font) => {
   const fontStr = fs.readFileSync(`./fonts/${font}`, { encoding: "utf8" });
-  fontObj[font.slice(0, -4)] = parseFont(fontStr);
+  const fontName = font.slice(0, -4);
+  fontNames.push(fontName);
+  buf += `const ${fontName} = ${JSON.stringify(parseFont(fontStr), null, 2)};\n\n`;
 });
 
-fs.writeFileSync(process.cwd() + "/fonts.json", JSON.stringify(fontObj));
+buf += `export {\n  ${fontNames.join(',\n  ')}\n};`;
 
-console.log('✅ wrote fonts.json')
+buf = buf.replace('__FONT_NAMES__', `typeof ${fontNames.join(' & ')}`);
+
+fs.writeFileSync(process.cwd() + "/fonts.js", buf);
+
+console.timeEnd('✅ wrote fonts.js');

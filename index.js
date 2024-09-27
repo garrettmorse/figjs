@@ -1,6 +1,15 @@
-const fonts = require("./fonts.json");
+/**
+ * @typedef Font
+ * @type {import('./fonts').Font}
+ */
 
-class FIGlet {
+/**
+ * @module FIGlet
+ */
+
+/** Represents a FIGlet font generator, given some configuration. */
+export class FIGlet {
+  /** @private @const */
   static #FIG_HIERACHY = [
     "|",
     "/",
@@ -14,16 +23,14 @@ class FIGlet {
     "<",
     ">",
   ];
+  /** @private @type {Font} */
   #font;
   /**
    *
-   * @param {keyof fonts} font
+   * @param {Font} font
    */
   constructor(font) {
-    if (!(font in fonts)) {
-      throw new Error(`Font ${font} not found`);
-    }
-    this.#font = fonts[font];
+    this.#font = font;
   }
 
   /**
@@ -347,7 +354,3 @@ class FIGlet {
     return result.replaceAll(this.#font.blankChar, " ");
   }
 }
-
-module.exports = {
-  FIGlet,
-};
