@@ -1,15 +1,16 @@
 # figjs
 
-A FIGlet driver for NodeJS.
+A FIGlet driver for JS.
 
 ### Usage
 
 ```js
-const { FIGlet } = require("@garrettmorse/figjs");
+import { FIGlet } from "@garrettmorse/figjs";
+import { slant } from "@garrettmorse/figjs/fonts";
 
-const slant = new FIGlet("slant");
+const figjs = new FIGlet(slant);
 
-const coolText = slant.write("Hello, World!");
+const coolText = figjs.write("Hello, World!");
 
 console.log(coolText);
 ```
@@ -38,9 +39,10 @@ There's currently a bug with certain combinations of characters that I can't qui
 Example
 
 ```js
-const { FIGlet } = require("@garrettmorse/figjs");
+import { FIGlet } from "@garrettmorse/figjs";
+import { slant } from "@garrettmorse/figjs/fonts";
 
-const slant = new FIGlet("slant");
+const figjs = new FIGlet(slant);
 
 const brokenText = slant.write("!.Hello, World!");
 
