@@ -1,6 +1,6 @@
 {
   "name": "@garrettmorse/figjs",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "files": [
     "dist",
     "README.md",
@@ -17,7 +17,7 @@
       },
       "require": {
         "types": "./dist/cjs/index.d.cts",
-        "default": "./dist/cjs/index.cjs" 
+        "default": "./dist/cjs/index.cjs"
       }
     },
     "./fonts/*": {
@@ -50,6 +50,7 @@
   "license": "MIT",
   "devDependencies": {
     "@knighted/duel": "^1.0.8",
+    "@types/node": "^22.7.4",
     "typescript": "^5.6.2"
   }
 }
