@@ -8,56 +8,72 @@ export type Font = {
   fontLines: string[];
 };
 
+// const DEBUG = process.env.FIG_DEBUG;
+
 /** Represents a FIGlet font generator, given some configuration. */
 export class FIGlet {
-  /** @private @const */
-  static #FIG_HIERACHY = [
-    "|",
-    "/",
-    "\\",
-    "[",
-    "]",
-    "{",
-    "}",
-    "(",
-    ")",
-    "<",
-    ">",
-  ];
-  /** @private @type {Font} */
-  #font : Font;
+
+  // BUG
+  // #previousLineLength: number;
+  // #currentLineLength: number;
+  #font: Font;
   constructor(font: Font) {
     this.#font = font;
   }
 
   /**
-   * Compares 2 FIG characters and determines hierarchy based on FIG spec
-   * @private
-   * @param {string} a
-   * @param {string} b
+   * Compares 2 characters and 
+   * @returns 
+   * ```js
+   * [charToPreserve, isCharA]
+   * ```
+   * else null if nothing to smush.
    */
-  cmpFIG(a: string, b: string) {
+  #smushFIG(a: string, b: string): [ string, boolean ] | null {
+    // rules are implemented in the same order as the C source
+    // i would've figured that they were in rule # order
+    if (a === ' ') return [b, false];
+    if (b === ' ') return [a, true];
+
+    // not sure...see line 1364 in figlet.c
+    // this is causing some bugs. i dont fully understand it i guess.
+    // if (this.#previousLineLength < 1 || this.#currentLineLength < 1) {
+    //   return null;
+    // }
+
+    // Rule 6: double hardblank
+    if (this.#font.smushRules[6] && a === this.#font.blankChar && b === this.#font.blankChar) {
+      return [a, true];
+    }
+
+    // not 100% on this one, but it's in the C source code
+    if (a === this.#font.blankChar || b === this.#font.blankChar) {
+      return null;
+    }
+
     // Rule 1: equal character
     if (this.#font.smushRules[1] && a === b) {
-      return 1;
+      return [a, true];
     }
 
     // Rule 2: Underscore
-    if (
-      this.#font.smushRules[2] &&
-      ((a === "_" && FIGlet.#FIG_HIERACHY.includes(b)) ||
-        (b === "_" && FIGlet.#FIG_HIERACHY.includes(a)))
-    ) {
-      return 2;
+    if (this.#font.smushRules[2]) {
+      if (a === "_" && "|/\\[]{}()<>".indexOf(b) > -1) return [b, false];
+      if (b === "_" && "|/\\[]{}()<>".indexOf(a) > -1) return [a, true];
     }
 
     // Rule 3: Hierarchy
-    if (
-      this.#font.smushRules[3] &&
-      FIGlet.#FIG_HIERACHY.includes(a) &&
-      FIGlet.#FIG_HIERACHY.includes(b)
-    ) {
-      return 3;
+    if (this.#font.smushRules[3]) {
+      if (a === '|' && "/\\[]{}()<>".indexOf(b) > -1) return [b, false];
+      if (b === '|' && "/\\[]{}()<>".indexOf(a) > -1) return [a, true];
+      if ("/\\".indexOf(a) > -1 && "[]{}()<>".indexOf(b) > -1) return [b, false];
+      if ("/\\".indexOf(b) > -1 && "[]{}()<>".indexOf(a) > -1) return [a, true];
+      if ("[]".indexOf(a) > -1 && "{}()<>".indexOf(b) > -1) return [b, false];
+      if ("[]".indexOf(b) > -1 && "{}()<>".indexOf(a) > -1) return [a, true];
+      if ("{}".indexOf(a) > -1 && "()<>".indexOf(b) > -1) return [b, false];
+      if ("{}".indexOf(b) > -1 && "()<>".indexOf(a) > -1) return [a, true];
+      if ("()".indexOf(a) > -1 && "<>".indexOf(b) > -1) return [b, false];
+      if ("()".indexOf(b) > -1 && "<>".indexOf(a) > -1) return [a, true];
     }
 
     // Rule 4: Opposite Pairs
@@ -69,37 +85,21 @@ export class FIGlet {
         (a === "}" && b === "{") ||
         (a === "(" && b === ")") ||
         (a === ")" && b === "("))
-    ) {
-      return 4;
+      )
+    {
+      // arbitrary whether to return true/false, i think
+      return ['|', true];
     }
 
     // Rule 5: Big X
     if (
-      this.#font.smushRules[5] &&
-      ((a === "/" && b === "\\") ||
-        (a === "\\" && b === "/") ||
-        (a === ">" && b === "<"))
-    ) {
-      return 5;
-    }
+      this.#font.smushRules[5]) {
+        if (a === "/" && b === "\\") return ['|', true];
+        if (a === "\\" && b === "/") return ['Y', true];
+        if (a === ">" && b === "<") return ['X', true];
+      }
 
-    // Rule 6: Hardblank
-    if (this.#font.smushRules[6] && a === "$" && b === "$") {
-      return 6;
-    }
-
-    // Rule 7: One Hardblank
-    if (a === "$" || b === "$") {
-      return 7;
-    }
-
-    // Rule 8: At least one space
-    if (a === " " || b === " ") {
-      return 8;
-    }
-
-    // 7 maps to "do nothing". since no other rules apply, do nothing...
-    return 7;
+    return null;
   }
 
   /**
@@ -108,7 +108,7 @@ export class FIGlet {
    * @param {string} str1
    * @param {string} str2
    */
-  static getSpaces(str1: string, str2: string) {
+  static #getSpaces(str1: string, str2: string) {
     let str1Spaces = 0;
     let str2Spaces = 0;
 
@@ -135,7 +135,7 @@ export class FIGlet {
    * @private
    * @param {number} char
    */
-  parseChar(char: number) {
+  #parseChar(char: number) {
     if (char in this.#font.charConfig) {
       return this.#font.charConfig[char];
     }
@@ -159,195 +159,108 @@ export class FIGlet {
     return (this.#font.charConfig[char] = charDefinition);
   }
 
-  /**
-   * @param {string} str
-   * @returns {string}
-   */
   write(str: string) {
-    const chars = [];
+    const figChars: string[][] = [];
+    // the first letter is never smushed.
+    const initialSmushConfig: number[][] = [[0]];
     let result = "";
+    
+    for (let letter = 0; letter < str.length; letter++) {
+      // retrieve the individual characters for the provided input string
+      figChars[letter] = structuredClone(this.#parseChar(str.codePointAt(letter)));
+      if (letter === 0) continue;
+      // now, how much to smush each letter
+      // cannot smush more than the length the first line of the FIG character
+      if (!initialSmushConfig[letter]) initialSmushConfig[letter] = [];
+      // BUG?
+      initialSmushConfig[letter].push(figChars[letter][0].length);
+      // chars[letter]:
+      // [
+      //   '    _   __',
+      //   '   / | / /',
+      //   '  /  |/ / ',
+      //   ' / /|  /  ',
+      //   '/_/ |_/   ',
+      //   '          '
+      // ]
+      const height = figChars[letter].length;
+      
+      for (let line = 0; line < height; line++) {
+        const prevLine = figChars[letter - 1][line];
+        const currentLine = figChars[letter][line];
+        initialSmushConfig[letter][line] = initialSmushConfig[letter][0];
 
-    // retrieve the individual characters for the provided input string
-    for (let i = 0; i < str.length; i++) {
-      chars[i] = structuredClone(this.parseChar(str.codePointAt(i)));
-    }
-
-    // smush the characters!
-    // how much to smush each letter
-    // - the first letter is never smushed...
-    const smushConfig = [0];
-    for (let line = 0, height = chars[0].length; line < height; line++) {
-      for (let letter = 1; letter < str.length; letter++) {
-        if (!Number.isFinite(smushConfig[letter])) {
-          smushConfig[letter] = Number.MAX_SAFE_INTEGER;
-        }
-
-        const prev = chars[letter - 1][line];
-        const cur = chars[letter][line];
-
-        const numSpacesForThisLine = FIGlet.getSpaces(
-          chars[letter - 1][line],
-          chars[letter][line],
+        const numSpacesBetweenTwoChars = FIGlet.#getSpaces(
+          prevLine,
+          currentLine,
         );
-        if (numSpacesForThisLine === prev.length + cur.length) {
+
+        if (numSpacesBetweenTwoChars === prevLine.length + currentLine.length) {
           // it's all spaces, skip analysis
           continue;
         }
 
-        if (numSpacesForThisLine < smushConfig[letter]) {
-          smushConfig[letter] = numSpacesForThisLine;
+        if (numSpacesBetweenTwoChars < initialSmushConfig[letter][line]) {
+          // need to run the smush function to set this value more appropriately.
+          // add 1 if it's safe to smush, else do not
+          const smushable = this.#smushFIG(prevLine.at(-1), currentLine.at(0));
+          initialSmushConfig[letter][line] = numSpacesBetweenTwoChars; 
+          if (smushable && str[letter] !== ' ' && str[letter - 1] !== ' ') initialSmushConfig[letter][line]++;
+          // smushConfig[letter] = numSpacesBetweenTwoChars;
         }
       }
     }
+    // DEBUG && console.log(initialSmushConfig);
+    
+    const smushConfig = initialSmushConfig.map(smushConfigs => Math.min(...smushConfigs));
 
-    for (let line = 0, height = chars[0].length; line < height; line++) {
+    // if (DEBUG) {
+    //   console.log(smushConfig);
+    // for (let line = 0; line < figChars[0].length; line++) {
+    //   for (let letter = 0; letter < figChars.length; letter++) {
+    //     process.stdout.write(figChars[letter][line]);
+    //   }
+    //   process.stdout.write('\n');
+    // }
+    // }
+
+    for (let line = 0, height = figChars[0].length; line < height; line++) {
       for (let letter = 0; letter < str.length; letter++) {
-        let smushAmount = smushConfig[letter];
+        // DEBUG && console.log(`\ncurrent letter: '${str[letter]}'`);
         if (letter > 0) {
-          let prevSmushAmount;
-          while (smushAmount > 0) {
-            if (prevSmushAmount === smushAmount) {
-              console.log({
-                prev: chars[letter - 1][line],
-                next: chars[letter][line],
-              });
-              throw new Error("I can't smush these two lines!");
-            }
+          // DEBUG && console.log(`smushing line: '${figChars[letter][line]}'`);
+          // DEBUG && console.log('into result:')
+          // DEBUG && process.stdout.write(result + ' <--\n');
+          for (let smushAmount = 0; smushAmount < smushConfig[letter]; smushAmount++) {
+            const prevChar = result.at(-1);
+            const currentChar = figChars[letter][line].at(0);
+            // BUG
+            // this.#previousLineLength = this.#currentLineLength ?? figChars[0][0].length;
+            // this.#currentLineLength = figChars[letter][0].length;
 
-            prevSmushAmount = smushAmount;
-            // prev last idx has space
-            if (result.at(-1) === " ") {
+            // DEBUG && console.log(`looking at ('${prevChar}','${currentChar}')`);
+  
+            const smushable = this.#smushFIG(prevChar, currentChar);
+            
+            if (smushable) {
+              const [charToSmush, isLeft] = smushable;
+              // need a pointer to figure out whether to concat into result or figChars
               result = result.slice(0, -1);
-              smushAmount--;
-            }
-            // cur first idx has space
-            else if (chars[letter][line].at(0) === " ") {
-              chars[letter][line] = chars[letter][line].slice(1);
-              smushAmount--;
-            }
-          }
-
-          // then replace according to FIG ruleset
-          const prev = result.at(-1);
-          const cur = chars[letter][line].at(0);
-          if (!prev || !cur) {
-            continue;
-          }
-
-          switch (this.cmpFIG(prev, cur)) {
-            // equal character
-            case 1: {
-              if (
-                !chars[letter - 1][line].includes("$") &&
-                !chars[letter][line].includes("$")
-              ) {
-                chars[letter][line] = chars[letter][line].slice(1);
-              }
-              break;
-            }
-
-            // underscore
-            case 2: {
-              if (prev === "_") {
-                result = result.slice(0, -1);
+              figChars[letter][line] = figChars[letter][line].slice(1);
+              if (isLeft) {
+                result += charToSmush;
               } else {
-                chars[letter][line] = chars[letter][line].slice(1);
+                figChars[letter][line] = charToSmush + figChars[letter][line];
               }
-
-              break;
-            }
-
-            // hierarchy
-            case 3: {
-              if (
-                FIGlet.#FIG_HIERACHY.indexOf(prev) <
-                FIGlet.#FIG_HIERACHY.indexOf(cur)
-              ) {
-                result = result.slice(0, -1);
-              } else {
-                chars[letter][line] = chars[letter][line].slice(1);
-              }
-
-              break;
-            }
-
-            // opposite pairs
-            case 4: {
-              result = result.slice(0, -1);
-              chars[letter][line] = chars[letter][line].slice(1);
-              result += "|";
-              break;
-            }
-
-            // Big X
-            case 5: {
-              if (prev === "/" && cur === "\\") {
-                result = result.slice(0, -1);
-                chars[letter][line] = chars[letter][line].slice(1);
-                result += "|";
-              } else if (prev === "\\" && cur === "/") {
-                result = result.slice(0, -1);
-                chars[letter][line] = chars[letter][line].slice(1);
-                result += "Y";
-              } else if (prev === ">" && cur === "<") {
-                result = result.slice(0, -1);
-                chars[letter][line] = chars[letter][line].slice(1);
-                result += "X";
-              }
-
-              break;
-            }
-
-            // double hardblank
-            case 6: {
-              if (
-                prev === this.#font.blankChar &&
-                cur === this.#font.blankChar
-              ) {
-                result = result.slice(0, -1);
-                chars[letter][line] = chars[letter][line].slice(1);
-                result += this.#font.blankChar;
-              }
-
-              break;
-            }
-
-            // one hardblank
-            case 7: {
-              // do nothing
-              break;
-            }
-
-            // one character and one space
-            case 8: {
-              // take the character
-              if (prev === " ") {
-                if (!chars[letter - 1][line].includes(this.#font.blankChar)) {
-                  result = result.slice(0, -1);
-                }
-              } else {
-                if (!chars[letter][line].includes(this.#font.blankChar)) {
-                  chars[letter][line] = chars[letter][line].slice(1);
-                }
-              }
-
-              break;
-            }
-
-            default: {
-              throw new Error(
-                "No FIG Smush Rule found for charset: " + prev + " :: " + cur,
-              );
             }
           }
         }
 
-        result += chars[letter][line];
+        result += figChars[letter][line];
       }
 
       result += "\n";
     }
-
     return result.replaceAll(this.#font.blankChar, " ");
   }
 }
