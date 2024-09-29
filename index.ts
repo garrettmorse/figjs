@@ -12,7 +12,6 @@ export type Font = {
 
 /** Represents a FIGlet font generator, given some configuration. */
 export class FIGlet {
-
   // BUG
   // #previousLineLength: number;
   // #currentLineLength: number;
@@ -22,18 +21,18 @@ export class FIGlet {
   }
 
   /**
-   * Compares 2 characters and 
-   * @returns 
+   * Compares 2 characters and
+   * @returns
    * ```js
    * [charToPreserve, isCharA]
    * ```
    * else null if nothing to smush.
    */
-  #smushFIG(a: string, b: string): [ string, boolean ] | null {
+  #smushFIG(a: string, b: string): [string, boolean] | null {
     // rules are implemented in the same order as the C source
     // i would've figured that they were in rule # order
-    if (a === ' ') return [b, false];
-    if (b === ' ') return [a, true];
+    if (a === " ") return [b, false];
+    if (b === " ") return [a, true];
 
     // not sure...see line 1364 in figlet.c
     // this is causing some bugs. i dont fully understand it i guess.
@@ -42,7 +41,11 @@ export class FIGlet {
     // }
 
     // Rule 6: double hardblank
-    if (this.#font.smushRules[6] && a === this.#font.blankChar && b === this.#font.blankChar) {
+    if (
+      this.#font.smushRules[6] &&
+      a === this.#font.blankChar &&
+      b === this.#font.blankChar
+    ) {
       return [a, true];
     }
 
@@ -64,9 +67,10 @@ export class FIGlet {
 
     // Rule 3: Hierarchy
     if (this.#font.smushRules[3]) {
-      if (a === '|' && "/\\[]{}()<>".indexOf(b) > -1) return [b, false];
-      if (b === '|' && "/\\[]{}()<>".indexOf(a) > -1) return [a, true];
-      if ("/\\".indexOf(a) > -1 && "[]{}()<>".indexOf(b) > -1) return [b, false];
+      if (a === "|" && "/\\[]{}()<>".indexOf(b) > -1) return [b, false];
+      if (b === "|" && "/\\[]{}()<>".indexOf(a) > -1) return [a, true];
+      if ("/\\".indexOf(a) > -1 && "[]{}()<>".indexOf(b) > -1)
+        return [b, false];
       if ("/\\".indexOf(b) > -1 && "[]{}()<>".indexOf(a) > -1) return [a, true];
       if ("[]".indexOf(a) > -1 && "{}()<>".indexOf(b) > -1) return [b, false];
       if ("[]".indexOf(b) > -1 && "{}()<>".indexOf(a) > -1) return [a, true];
@@ -85,19 +89,17 @@ export class FIGlet {
         (a === "}" && b === "{") ||
         (a === "(" && b === ")") ||
         (a === ")" && b === "("))
-      )
-    {
+    ) {
       // arbitrary whether to return true/false, i think
-      return ['|', true];
+      return ["|", true];
     }
 
     // Rule 5: Big X
-    if (
-      this.#font.smushRules[5]) {
-        if (a === "/" && b === "\\") return ['|', true];
-        if (a === "\\" && b === "/") return ['Y', true];
-        if (a === ">" && b === "<") return ['X', true];
-      }
+    if (this.#font.smushRules[5]) {
+      if (a === "/" && b === "\\") return ["|", true];
+      if (a === "\\" && b === "/") return ["Y", true];
+      if (a === ">" && b === "<") return ["X", true];
+    }
 
     return null;
   }
@@ -147,10 +149,10 @@ export class FIGlet {
       charDefinition[i] = this.#font.fontLines[charStart + i].replaceAll(
         "@",
         "",
-      )
+      );
     }
 
-    if (charDefinition.every(line => line.at(0) === ' ')) {
+    if (charDefinition.every((line) => line.at(0) === " ")) {
       charDefinition.forEach((line, i) => {
         charDefinition[i] = line.slice(1);
       });
@@ -164,10 +166,12 @@ export class FIGlet {
     // the first letter is never smushed.
     const initialSmushConfig: number[][] = [[0]];
     let result = "";
-    
+
     for (let letter = 0; letter < str.length; letter++) {
       // retrieve the individual characters for the provided input string
-      figChars[letter] = structuredClone(this.#parseChar(str.codePointAt(letter)));
+      figChars[letter] = structuredClone(
+        this.#parseChar(str.codePointAt(letter)),
+      );
       if (letter === 0) continue;
       // now, how much to smush each letter
       // cannot smush more than the length the first line of the FIG character
@@ -184,7 +188,7 @@ export class FIGlet {
       //   '          '
       // ]
       const height = figChars[letter].length;
-      
+
       for (let line = 0; line < height; line++) {
         const prevLine = figChars[letter - 1][line];
         const currentLine = figChars[letter][line];
@@ -204,15 +208,18 @@ export class FIGlet {
           // need to run the smush function to set this value more appropriately.
           // add 1 if it's safe to smush, else do not
           const smushable = this.#smushFIG(prevLine.at(-1), currentLine.at(0));
-          initialSmushConfig[letter][line] = numSpacesBetweenTwoChars; 
-          if (smushable && str[letter] !== ' ' && str[letter - 1] !== ' ') initialSmushConfig[letter][line]++;
+          initialSmushConfig[letter][line] = numSpacesBetweenTwoChars;
+          if (smushable && str[letter] !== " " && str[letter - 1] !== " ")
+            initialSmushConfig[letter][line]++;
           // smushConfig[letter] = numSpacesBetweenTwoChars;
         }
       }
     }
     // DEBUG && console.log(initialSmushConfig);
-    
-    const smushConfig = initialSmushConfig.map(smushConfigs => Math.min(...smushConfigs));
+
+    const smushConfig = initialSmushConfig.map((smushConfigs) =>
+      Math.min(...smushConfigs),
+    );
 
     // if (DEBUG) {
     //   console.log(smushConfig);
@@ -231,7 +238,11 @@ export class FIGlet {
           // DEBUG && console.log(`smushing line: '${figChars[letter][line]}'`);
           // DEBUG && console.log('into result:')
           // DEBUG && process.stdout.write(result + ' <--\n');
-          for (let smushAmount = 0; smushAmount < smushConfig[letter]; smushAmount++) {
+          for (
+            let smushAmount = 0;
+            smushAmount < smushConfig[letter];
+            smushAmount++
+          ) {
             const prevChar = result.at(-1);
             const currentChar = figChars[letter][line].at(0);
             // BUG
@@ -239,9 +250,9 @@ export class FIGlet {
             // this.#currentLineLength = figChars[letter][0].length;
 
             // DEBUG && console.log(`looking at ('${prevChar}','${currentChar}')`);
-  
+
             const smushable = this.#smushFIG(prevChar, currentChar);
-            
+
             if (smushable) {
               const [charToSmush, isLeft] = smushable;
               // need a pointer to figure out whether to concat into result or figChars
