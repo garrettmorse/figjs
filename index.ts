@@ -8,6 +8,19 @@ export type Font = {
   fontLines: string[];
 };
 
+type Runtime = 'node' | 'browser' | 'unknown';
+
+export type FigOptions = {
+  /**
+   * force a runtime
+   */
+  runtime?: Runtime;
+  /**
+   * when running in node, wrap to fit within a terminal
+   */
+  wrap?: boolean;
+}
+
 // const DEBUG = process.env.FIG_DEBUG;
 
 /** Represents a FIGlet font generator, given some configuration. */
@@ -15,9 +28,41 @@ export class FIGlet {
   // BUG
   // #previousLineLength: number;
   // #currentLineLength: number;
+  /**
+   * The current character being processed from the input str
+   */
+  #currentChar: string;
+  /**
+   * Index from the input string whose result letter should be wrapped
+   */
+  #charIndexToStartWrapping: number | null = null;
+  /**
+   * The current result string to be returned from {@link write}
+   */
+  #currentResult: string;
+  #runtime: Runtime;
+  #wrap: boolean = true;
   #font: Font;
-  constructor(font: Font) {
+  constructor(font: Font, opts?: FigOptions) {
     this.#font = font;
+    
+    if (opts?.runtime) this.#runtime = opts.runtime;
+    else if (typeof window !== 'undefined') this.#runtime = 'browser';
+    else if (typeof process !== 'undefined') this.#runtime = 'node';
+    else this.#runtime = 'unknown';
+
+    if (opts?.wrap !== undefined) this.#wrap = opts.wrap;
+  }
+
+  #shouldWrap(): boolean {
+    if (!this.#wrap) return false;
+    if (this.#runtime !== 'node') return false;
+
+    const termWidth = process.stdout.columns;
+    const currentResultWidth = this.#currentResult.split('\n').at(-1).length;
+    const currentCharWidth = this.#font.charConfig[this.#currentChar.codePointAt(0)].reduce((len, line) => line.length > len ? line.length : len, Number.MIN_SAFE_INTEGER);
+
+    return (termWidth - currentResultWidth) < currentCharWidth;
   }
 
   /**
@@ -161,13 +206,24 @@ export class FIGlet {
     return (this.#font.charConfig[char] = charDefinition);
   }
 
+  #clear() {
+    this.#currentResult = "";
+    this.#charIndexToStartWrapping = null;
+    this.#currentChar = null;
+  }
+
+  /**
+   * @param str The input string
+   */
   write(str: string) {
+    str = str.trim();
+    this.#clear();
     const figChars: string[][] = [];
     // the first letter is never smushed.
     const initialSmushConfig: number[][] = [[0]];
-    let result = "";
 
     for (let letter = 0; letter < str.length; letter++) {
+      this.#currentChar = str[letter];
       // retrieve the individual characters for the provided input string
       figChars[letter] = structuredClone(
         this.#parseChar(str.codePointAt(letter)),
@@ -233,6 +289,7 @@ export class FIGlet {
 
     for (let line = 0, height = figChars[0].length; line < height; line++) {
       for (let letter = 0; letter < str.length; letter++) {
+        this.#currentChar = str[letter];
         // DEBUG && console.log(`\ncurrent letter: '${str[letter]}'`);
         if (letter > 0) {
           // DEBUG && console.log(`smushing line: '${figChars[letter][line]}'`);
@@ -243,7 +300,7 @@ export class FIGlet {
             smushAmount < smushConfig[letter];
             smushAmount++
           ) {
-            const prevChar = result.at(-1);
+            const prevChar = this.#currentResult.at(-1);
             const currentChar = figChars[letter][line].at(0);
             // BUG
             // this.#previousLineLength = this.#currentLineLength ?? figChars[0][0].length;
@@ -256,22 +313,34 @@ export class FIGlet {
             if (smushable) {
               const [charToSmush, isLeft] = smushable;
               // need a pointer to figure out whether to concat into result or figChars
-              result = result.slice(0, -1);
+              this.#currentResult = this.#currentResult.slice(0, -1);
               figChars[letter][line] = figChars[letter][line].slice(1);
               if (isLeft) {
-                result += charToSmush;
+                this.#currentResult += charToSmush;
               } else {
                 figChars[letter][line] = charToSmush + figChars[letter][line];
               }
             }
           }
         }
-
-        result += figChars[letter][line];
+        if (this.#shouldWrap() && (!this.#charIndexToStartWrapping || letter < this.#charIndexToStartWrapping)) this.#charIndexToStartWrapping = letter;
+        this.#currentResult += figChars[letter][line];
       }
 
-      result += "\n";
+      this.#currentResult += "\n";
     }
-    return result.replaceAll(this.#font.blankChar, " ");
+
+    let finalResult = this.#currentResult;
+    // process for wrapping
+    if (this.#charIndexToStartWrapping !== null) {
+      const end = this.#charIndexToStartWrapping;
+      this.#charIndexToStartWrapping = null;
+      finalResult = this.write(str.slice(0, end));
+      finalResult += this.write(str.slice(end));
+    } 
+    else this.#charIndexToStartWrapping = null;
+    
+    
+    return finalResult.replaceAll(this.#font.blankChar, " ");
   }
 }
