@@ -323,7 +323,25 @@ export class FIGlet {
             }
           }
         }
-        if (this.#shouldWrap() && (!this.#charIndexToStartWrapping || letter < this.#charIndexToStartWrapping)) this.#charIndexToStartWrapping = letter;
+        if ((!this.#charIndexToStartWrapping || letter < this.#charIndexToStartWrapping) && this.#shouldWrap()) {
+          const strPartsWithoutSpaces = str.split(' ');
+          let indexOfWord = 0;
+          let distance = letter;
+          for (let i = 0; i < strPartsWithoutSpaces.length; i++) {
+            const word = strPartsWithoutSpaces[i];
+            distance -= word.length + 1; // +1 to account for the splitted space
+            if (distance <= 0) {
+              indexOfWord = i;
+              break;
+            } 
+          }
+          // are we wrapping an entire word, or just the letters?
+          if (indexOfWord === 0) {
+            this.#charIndexToStartWrapping = letter;
+          } else {
+            this.#charIndexToStartWrapping = strPartsWithoutSpaces.slice(0, indexOfWord).reduce((indexToWrap, word) => indexToWrap += word.length + 1, 0); // +1 to account for the splitted space
+          }
+        } 
         this.#currentResult += figChars[letter][line];
       }
 
